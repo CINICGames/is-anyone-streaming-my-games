@@ -2,10 +2,11 @@ require('dotenv').config();
 const TwitchApi = require('node-twitch').default;
 const discord = require('discord.js');
 const cron = require('cron');
+const config = require('./config.json');
 
 const twitch = new TwitchApi({
-    client_id: process.env.CLIENT_ID,
-    client_secret: process.env.CLIENT_SECRET
+    client_id: config.clientId,
+    client_secret: config.clientSecret
 });
 
 const bot = new discord.Client({
@@ -15,10 +16,10 @@ const bot = new discord.Client({
 });
 
 let notifiedStreams = [];
-let streamChecker = new cron.CronJob(`*/${process.env.PING} * * * *`, check);
+let streamChecker = new cron.CronJob(`*/${config.ping} * * * *`, check);
 
 async function check() {
-    const streams = await getStreamsByGame(process.env.GAME_NAMES.split(","));
+    const streams = await getStreamsByGame(config.gameNames);
     notifyNewStreams(streams);
     notifiedStreams = [];
     streams.forEach(s => notifiedStreams.push(s.user_name));
@@ -40,7 +41,7 @@ async function getGameIds(name) {
 function notifyNewStreams(streams) {
     var newStreams = streams.filter(s => !notifiedStreams.includes(s.user_name));
     console.log(newStreams);
-    let channel = bot.channels.cache.get(process.env.CHANNEL);
+    let channel = bot.channels.cache.get(config.channelId);
     for(const newStream of newStreams) {
         sendNotification(channel, newStream);
     }
@@ -64,5 +65,5 @@ async function getUser(name) {
     return users.data[0];
 }
 
-bot.login(process.env.BOT_TOKEN);
+bot.login(config.botToken);
 bot.on('ready', () => { streamChecker.start(); });
